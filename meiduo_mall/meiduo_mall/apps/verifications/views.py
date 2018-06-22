@@ -9,13 +9,13 @@ from rest_framework.generics import GenericAPIView
 # Create your views here.
 from .serializers import ImageCodeCheckSerializer
 import random
-from meiduo_mall.libs.yuntongxun.sms import CCP
-import logging
+from celery_tasks.sms.tasks import send_sms_code
 from rest_framework.response import Response
 from rest_framework import status
+from celery_tasks.sms.libs.yuntongxun.sms import CCP
+import logging
 
-
-logger = logging.getLogger('Django')
+logger = logging.getLogger('django')
 
 
 class ImageCodeView(APIView):
@@ -83,5 +83,11 @@ class SMSCodeView(GenericAPIView):
         #     else:
         #         logger.warning("发送验证码短信[失败][ mobile: %s ]" % mobile)
         #         return Response({'message': '发送短信失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        #
-        return Response({'message':'OK'},status=status.HTTP_200_OK)
+
+        # 使用celery发送短信(异步任务)
+        expires = str(constants.SMS_CODE_REDIS_EXPIRES // 60)  # 除以60,因为expires单位是分钟
+        # send_sms_code.delay(mobile, sms_code, expires)
+
+        # 启动celery: celery -A celery_tasks.main worker -l info
+
+        return Response({'message':'OK'})
