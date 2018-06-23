@@ -19,6 +19,7 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^', include('verifications.urls')),  # mieduo_mall.apps.这个url已经添加python解释器到搜索包的路径中
-    url(r'^', include('users.urls'))
+    url(r'^', include('users.urls')),
+    url(r'^oauth/', include('oauth.urls'))  # QQ登陆
 
 ]

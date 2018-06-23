@@ -84,6 +84,7 @@ class SMSCodeView(GenericAPIView):
         #         logger.warning("发送验证码短信[失败][ mobile: %s ]" % mobile)
         #         return Response({'message': '发送短信失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
         # 使用celery发送短信(异步任务)
         expires = str(constants.SMS_CODE_REDIS_EXPIRES // 60)  # 除以60,因为expires单位是分钟
         # send_sms_code.delay(mobile, sms_code, expires)

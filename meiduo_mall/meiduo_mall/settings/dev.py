@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
     'users.apps.UsersConfig',
     'verifications.apps.VerificationsConfig',
+    'oauth.apps.OauthConfig'
 ]
 
 MIDDLEWARE = [
@@ -220,10 +221,11 @@ REST_FRAMEWORK = {
 # 配置django rest_framework JWT
 JWT_AUTH = {
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1), # 设置token有效期
+    'JWT_RESPONSE_PAYLOAD_DANDLER':'users.utils.jwt_response_payload_handler',
 }
 
 
-# 声明认证系统使用的模型类系
+# 声明认证系统使用的
 AUTH_USER_MODEL = 'users.User'
 
 
@@ -236,5 +238,14 @@ CORS_ORIGIN_WHITELIST = (
 )
 CORS_ALLOW_CREDENTIALS = True
 
+# 自定义登陆认证系统
+AUTHENTICATION_BACKENDS = [
+    'users.utils.UsernameMobileAuthBackend',
+]
 
 
+# QQ登录参数
+QQ_CLIENT_ID = '101474184'
+QQ_CLIENT_SECRET = 'c6ce949e04e12ecc909ae6a8b09b637c'
+QQ_REDIRECT_URI = 'http://www.meiduo.site:8080/oauth_callback.html'
+QQ_STATE = '/'
