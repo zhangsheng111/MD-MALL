@@ -2,12 +2,15 @@ from rest_framework import serializers
 from .models import User
 import re
 from django_redis import get_redis_connection
+from . import constants
+from goods.models import SKU
+
 
 # 手动签发JWT,手动创建token
 from rest_framework_jwt.settings import api_settings
 
 class CreateUserSerializer(serializers.ModelSerializer):
-    '''创建用户序列化'''
+    '''注册用户的序列化'''
 
     password2 = serializers.CharField(label='确认密码', write_only=True)
     sms_code = serializers.CharField(label='短信验证码', write_only=True)
@@ -96,3 +99,132 @@ class CreateUserSerializer(serializers.ModelSerializer):
         return user
 
 
+# 创建返回给用户中心的数据的序列化器
+class UserDetailSerializer(serializers.ModelSerializer):
+    '''显示用户中心数据序列化器'''
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'mobile', 'email', 'email_active')
+
+
+
+# 导入邮件发送功能
+from celery_tasks.email.tasks import send_active_email
+
+class EmailSerializer(serializers.ModelSerializer):
+    '''验证邮箱的序列化器'''
+    class Meta:
+        model = User
+        fields = ('id','email')
+        extra_kwargs = {
+            'email':{
+                'required':True   # 反序列化时必须给email传值
+            }
+        }
+
+
+    def update(self, instance, validated_data):
+
+        # instance 视图中传来的user对象
+        # validated_data  上面验证ok的数据
+        email = validated_data.get('email')
+        # 保存邮箱到数据库
+
+        instance.email = email
+        instance.save()
+
+        # 生成邮件激活链接地址
+        verify_url = instance.generate_verify_email_url()
+
+        # 异步发送邮件
+        send_active_email.delay(email, verify_url)
+
+        return instance
+
+#
+
+
+# 创建收货地址的序列化器
+from .models import Address
+
+class UserAddressSerializer(serializers.ModelSerializer):
+
+    province = serializers.StringRelatedField(read_only=True)
+    city = serializers.StringRelatedField(read_only=True)
+    district = serializers.StringRelatedField(read_only=True)
+    province_id = serializers.IntegerField(label='省ID', required=True)
+    city_id = serializers.IntegerField(label='市ID', required=True)
+    district_id = serializers.IntegerField(label='区ID', required=True)
+    # 声明
+    class Meta:
+        model = Address
+        exclude = ('is_deleted', 'user', 'update_time', 'create_time')
+
+    def validate_mobile(self,value):
+        '''验证手机号'''
+        if not re.match(r'^1[3-9]\d{9}$', value):
+            raise serializers.ValidationError('手机号格式错误')
+        return value
+
+    def create(self, validated_data):
+        '''重写create方法'''
+        # 当前操作的用户对象也需要添加到地址表,以指明该地址属于当前的用户, 在创建新的地址数据表时, 需要在validated_data中添加用户对象的属性
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class AddressTitleSerializer(serializers.ModelSerializer):
+    '''地址标题的序列化器'''
+    class Meta:
+        model = Address
+        fields = ('title',)
+
+
+
+
+
+# 浏览历史记录序列化器
+class AddUserBrowsingHistorySerializer(serializers.Serializer):
+    '''序列化器'''
+    sku_id = serializers.IntegerField(label="商品SKU编号", min_value=1)
+
+
+    def validate_sku_id(self, value):
+        """
+        检验sku_id是否存在
+        """
+        try:
+            SKU.objects.get(id=value)
+        except SKU.DoesNotExist:
+            raise serializers.ValidationError('该商品不存在')
+        return value
+
+    def create(self, validated_data):
+        """
+        保存
+        """
+        user_id = self.context['request'].user.id
+        sku_id = validated_data['sku_id']
+
+        redis_conn = get_redis_connection("history")
+        pl = redis_conn.pipeline()
+
+        # 移除已经存在的本商品浏览记录
+        pl.lrem("history_%s" % user_id, 0, sku_id)
+        # 添加新的浏览记录
+        pl.lpush("history_%s" % user_id, sku_id)   # history_6  表示是id为６的用户的浏览记录
+        # 只保存最多5条记录
+        pl.ltrim("history_%s" % user_id, 0, constants.USER_BROWSING_HISTORY_COUNTS_LIMIT - 1)
+
+        pl.execute()
+
+        return validated_data
+
+
+class SKUSerializer(serializers.ModelSerializer):
+    """
+    查询历史记录对应的SKU序列化器
+    """
+    class Meta:
+        model = SKU
+        fields = ('id', 'name', 'price', 'default_image_url', 'comments')

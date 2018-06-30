@@ -13,4 +13,4 @@ celery_app = Celery('meiduo')     # 起名区分celery
 celery_app.config_from_object('celery_tasks.config')   # config模块也是对象
 
 # 加入任务
-celery_app.autodiscover_tasks(['celery_tasks.sms'])  # 列表存放可以存放多个不同任务,自动找到tasks模块
+celery_app.autodiscover_tasks(['celery_tasks.sms','celery_tasks.email','celery_tasks.html'])  # 列表存放可以存放多个不同任务,自动找到tasks模块

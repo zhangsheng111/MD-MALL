@@ -73,7 +73,7 @@ class OAuthQQUserSerializer(serializers.ModelSerializer):
 
         if not user:
             # 用户不存在,创建用户,绑定openid
-            # 直接创建并加密密码
+             # 直接创建并加密密码
             user = User.objects.create_user(username=mobile,mobile=mobile,password=password)
 
         # 用户存在,校验密码,绑定openid

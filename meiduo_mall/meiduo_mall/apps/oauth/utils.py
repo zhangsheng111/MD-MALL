@@ -120,7 +120,7 @@ class OAuthQQ(object):
 
     @staticmethod
     def check_save_user_token(access_token):
-
+        '''校验token'''
         serializer = TJWSSerializer(settings.SECRET_KEY, constants.BIND_USER_ACCESS_TOKEN_EXPIRES)
 
         try:

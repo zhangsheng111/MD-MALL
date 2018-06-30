@@ -35,7 +35,7 @@ class QQAuthUrlView(APIView):
 class QQAuthUserView(CreateAPIView):
     '''QQ登陆成功生成code, 通过code到QQ服务器获取登陆用户唯一表示openid'''
 
-
+    '''保存页面使用序列化器'''
     # 校验比较多,使用序列化器
     serializer_class = OAuthQQUserSerializer
 
@@ -81,7 +81,6 @@ class QQAuthUserView(CreateAPIView):
                 'user_id':user.id,
                 'token':token
             })
-
 
 
 

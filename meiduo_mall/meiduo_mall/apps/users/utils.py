@@ -6,6 +6,8 @@ from django.contrib.auth.backends import ModelBackend
 def jwt_response_payload_handler(token, user=None, request=None):
     '''自定义jwt 登陆验证成功返回带有用户身份信息的token给浏览器'''
     '''需要在配置文件dev中配置JWT_AUTH'''
+
+    print('token',token)
     return {
         'token': token,
         'user_id': user.id,
@@ -34,7 +36,7 @@ def get_user_by_account(account):
 # 重写认证系统, 需要在配置文件中声明我们自己定义的方法
 
 class UsernameMobileAuthBackend(ModelBackend):
-    '''自定义用户名吼哦折手机号认证'''
+    '''自定义用户名手机号认证'''
     def authenticate(self, request, username=None, password=None, **kwargs):
         user = get_user_by_account(username)
         if user and user.check_password(password):

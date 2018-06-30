@@ -20,6 +20,12 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^', include('verifications.urls')),  # mieduo_mall.apps.这个url已经添加python解释器到搜索包的路径中
     url(r'^', include('users.urls')),
-    url(r'^oauth/', include('oauth.urls'))  # QQ登陆
+    url(r'^oauth/', include('oauth.urls')),  # QQ登陆
+    url(r'', include('areas.urls')),   # 收货地址
+
+    url(r'^ckeditor/', include('ckeditor_uploader.urls')), # CKEditor富文本编辑器
+
+    url(r'^', include('goods.urls')),# 商品列表页
+    url(r'^', include('carts.urls'))
 
 ]
