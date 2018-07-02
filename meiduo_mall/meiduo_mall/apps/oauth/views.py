@@ -9,6 +9,7 @@ from rest_framework import status
 from .exceptions import OAuthQQAPIError
 from .models import OAuthQQUser  # 导入openid与user_id关联的模型表
 from .serializers import OAuthQQUserSerializer
+from carts.utils import hebing_cookie_redis_cart
 
 # Create your views here.
 
@@ -67,7 +68,7 @@ class QQAuthUserView(CreateAPIView):
             return Response({'access_token': access_token})
 
         else:
-            # 如果查询到,证明绑定或,签发JWT token
+            # 如果查询到,证明绑定,签发JWT token
             # 手动创建JWT-token
             jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
             jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
@@ -76,11 +77,19 @@ class QQAuthUserView(CreateAPIView):
             payload = jwt_payload_handler(user)  # 传入user模型对象中,这就是用户身份信息加入在token
             token = jwt_encode_handler(payload)
             # 返回数据
-            return Response({
-                'username':user.username,
-                'user_id':user.id,
-                'token':token
+            # return Response({
+            #     'username':user.username,
+            #     'user_id':user.id,
+            #     'token':token
+            # })
+            # 合并购物车操作1
+            response = Response({
+                 'username':user.username,
+                 'user_id':user.id,
+                 'token':token
             })
+            response = hebing_cookie_redis_cart(request, user, response)
+            return response
 
 
 
@@ -94,6 +103,13 @@ class QQAuthUserView(CreateAPIView):
         # 用户存在,校验密码,绑定openid
         # 用户不存在,创建用户,绑定openid
 
+    # 合并购物车2
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
 
+        # 合并购物车
+        user = self.user  # 从视图对象中获取user属性
+        response = hebing_cookie_redis_cart(request, user, response)
+        return response
 
 

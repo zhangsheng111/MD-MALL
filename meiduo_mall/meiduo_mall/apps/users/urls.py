@@ -11,7 +11,12 @@ urlpatterns = [
     url(r'^users/$', views.RegisterView.as_view()),
 
     # Django REST framework JWT提供了登录签发JWT的视图，可以直接使用
-    url(r'^authorizations/$', obtain_jwt_token),
+    #==================================================
+    #当购物车数据在登陆的同时自动合并时, 需要在视图中重写登陆验证
+    #==================================================
+    # url(r'^authorizations/$', obtain_jwt_token),# 购物车合并, 需要重写验证
+    url(r'^authorizations/$', views.UserAuthorizeView.as_view()),
+
     # 获取用户中心数据
     url(r'^user/$', views.UserDetailView.as_view()),
     # 保存email

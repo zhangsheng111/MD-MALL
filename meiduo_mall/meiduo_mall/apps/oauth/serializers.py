@@ -89,5 +89,8 @@ class OAuthQQUserSerializer(serializers.ModelSerializer):
         # 把token添加到user中返回给浏览器保存
         user.token = token
 
+        # 把user对象传给视图对象当做属性用于合并购物车
+        self.contect['view'].user = user
+
         return user
 

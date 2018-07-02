@@ -3,9 +3,13 @@ from django_redis import get_redis_connection
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
+from rest_framework_jwt.views import ObtainJSONWebToken
+
 from .models import User
 from rest_framework.response import Response
 from goods.models import SKU
+from carts.utils import hebing_cookie_redis_cart  # 合并购物车方法
+
 
 # Create your views here.
 # ==================================================================
@@ -213,3 +217,18 @@ class UserBrowsingHistoryView(CreateModelMixin, GenericAPIView):
 
         serializer = SKUSerializer(skus, many=True)
         return Response(serializer.data)
+
+
+# 用户登陆验证中加入自动合并购物车商品数据
+class UserAuthorizeView(ObtainJSONWebToken):
+    def post(self, request, *args, **kwargs):
+        # 调用父类方法,进行用户名和密码的验证
+        response = super().post(request, *args, **kwargs)
+
+        # 如果用户登陆成功, 合并购物车
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            # 调用合并方法
+            response = hebing_cookie_redis_cart(request, user, response)
+        return response
